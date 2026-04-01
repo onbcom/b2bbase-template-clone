@@ -205,19 +205,30 @@ margin: 0rem !important;
   var imgs = imgWrap.querySelectorAll('.home1_features_img');
   if (!imgs.length) return;
 
-  // Cancel any existing IX2 animations and set initial state
-  for (var n = 0; n < imgs.length; n++) {
-    if (imgs[n].getAnimations) {
-      imgs[n].getAnimations().forEach(function(a) { a.cancel(); });
+  var activeIndex = 0;
+
+  function cancelIX2() {
+    for (var c = 0; c < imgs.length; c++) {
+      if (imgs[c].getAnimations) {
+        var anims = imgs[c].getAnimations();
+        for (var a = 0; a < anims.length; a++) {
+          if (anims[a].constructor.name !== 'CSSTransition') anims[a].cancel();
+        }
+      }
     }
-    imgs[n].style.opacity = n === 0 ? '1' : '0';
   }
 
   function showImage(index) {
+    activeIndex = index;
+    cancelIX2();
     for (var j = 0; j < imgs.length; j++) {
       imgs[j].style.opacity = j === index ? '1' : '0';
     }
   }
+
+  // Set initial state
+  cancelIX2();
+  showImage(0);
 
   for (var i = 0; i < items.length; i++) {
     (function(idx) {
@@ -246,6 +257,29 @@ margin: 0rem !important;
     });
   }
   window.addEventListener('scroll', onScroll, { passive: true });
+
+  // Continuously cancel IX2 WAAPI animations and enforce correct opacity
+  function patrol() {
+    var hadIX2 = false;
+    for (var c = 0; c < imgs.length; c++) {
+      if (imgs[c].getAnimations) {
+        var anims = imgs[c].getAnimations();
+        for (var a = 0; a < anims.length; a++) {
+          if (anims[a].constructor.name !== 'CSSTransition') {
+            anims[a].cancel();
+            hadIX2 = true;
+          }
+        }
+      }
+    }
+    if (hadIX2) {
+      for (var j = 0; j < imgs.length; j++) {
+        imgs[j].style.opacity = j === activeIndex ? '1' : '0';
+      }
+    }
+    requestAnimationFrame(patrol);
+  }
+  patrol();
 })();
 </script>
 </body></html>
